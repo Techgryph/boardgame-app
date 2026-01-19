@@ -1,50 +1,58 @@
 pipeline {
-  agent any
+    agent any
 
-  stages {
-
-    stage('Checkout') {
-      steps {
-        git 'https://github.com/Akshatadd/boardgame-devops.git'
-      }
+    tools {
+        maven 'maven3'
     }
 
-    stage('Build') {
-      steps {
-        sh 'mvn clean package'
-      }
+    environment {
+        IMAGE_NAME = "techgryphdocker/boardgame-app"
     }
 
-    stage('Test') {
-      steps {
-        sh 'mvn test'
-      }
-    }
+    stages {
 
-    stage('Docker Build') {
-      steps {
-        sh 'docker build -t boardgame-app .'
-      }
-    }
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/DevOpsInstituteMumbai-wa/Automating-Secure-Deployment-Boardgame.git'
+            }
+        }
 
-    stage('Trivy Scan') {
-      steps {
-        sh 'trivy image boardgame-app'
-      }
-    }
+        stage('Build') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
 
-    stage('Push to ECR') {
-      steps {
-        sh 'docker tag boardgame-app:latest <ECR_URI>:latest'
-        sh 'docker push <ECR_URI>:latest'
-      }
-    }
+        stage('SonarQube Scan') {
+            environment {
+                SONAR_TOKEN = credentials('sonar-token')
+            }
+            steps {
+                sh '''
+                mvn sonar:sonar \
+                -Dsonar.host.url=http://sonarqube:9000 \
+                -Dsonar.login=$SONAR_TOKEN
+                '''
+            }
+        }
 
-    stage('Deploy Infrastructure') {
-      steps {
-        sh 'cd terraform && terraform apply -auto-approve'
-      }
+        stage('Docker Build') {
+            steps {
+                sh 'docker build -t $IMAGE_NAME:$BUILD_NUMBER .'
+            }
+        }
+
+        stage('Docker Push') {
+            environment {
+                DOCKER_CREDS = credentials('dockerhub-creds')
+            }
+            steps {
+                sh '''
+                echo $DOCKER_CREDS_PSW | docker login -u $DOCKER_CREDS_USR --password-stdin
+                docker push $IMAGE_NAME:$BUILD_NUMBER
+                '''
+            }
+        }
     }
-  }
 }
 
