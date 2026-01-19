@@ -3,7 +3,6 @@ pipeline {
 
     tools {
         maven 'maven3'
-        sonarRunner 'sonar-scanner'
     }
 
     environment {
@@ -19,18 +18,18 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-    steps {
-        withSonarQubeEnv('sonar') {
-            sh '''
-              sonar-scanner \
-              -Dsonar.projectKey=boardgame-app \
-              -Dsonar.sources=src \
-              -Dsonar.java.binaries=target
-            '''
+            steps {
+                withSonarQubeEnv('sonar') {
+                    sh '''
+                      export PATH=$PATH:/var/jenkins_home/tools/org.jenkinsci.plugins.sonar.SonarRunnerInstallation/sonar-scanner/bin
+                      sonar-scanner \
+                      -Dsonar.projectKey=boardgame-app \
+                      -Dsonar.sources=src \
+                      -Dsonar.java.binaries=target
+                    '''
+                }
+            }
         }
-    }
-}
-
 
         stage('Docker Build') {
             steps {
