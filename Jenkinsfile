@@ -17,18 +17,14 @@ pipeline {
             }
         }
 
-        stage('SonarQube Scan') {
-    environment {
-        SONAR_TOKEN = credentials('sonar-token')
-    }
+        stage('SonarQube Analysis') {
     steps {
         withSonarQubeEnv('sonar') {
             sh '''
-            sonar-scanner \
-            -Dsonar.projectKey=boardgame-app \
-            -Dsonar.sources=src \
-            -Dsonar.java.binaries=target \
-            -Dsonar.login=$SONAR_TOKEN
+              sonar-scanner \
+              -Dsonar.projectKey=boardgame-app \
+              -Dsonar.sources=src \
+              -Dsonar.java.binaries=target
             '''
         }
     }
